@@ -39,6 +39,22 @@ We need to source our new setup file. In the same directory:
 $ source devel/setup.bash
 ```
 
+Now, to create the package:
+```
+$ cd ~/husky_ros_tutorial/src
+$ catkin_create_pkg ctrl_husky_tutorial std_msgs geometry_msgs rospy roscpp
+```
+Notice how we import some specific message types. We will talk about these in the next section  
+
+Now we need to build the package and source it:
+```
+$ cd ~/husky_ros_tutorial
+$ catkin_make
+$ source devel/setup.bash
+```
+
+Now go to <strong>section 6.1</strong> in this tutorial: http://wiki.ros.org/catkin/Tutorials/CreatingPackage  
+And follow the steps to populate the "package.xml"
 # Writing the path planning algorithm
 This section consists of multiple parts to provide a holistic understanding up the way we use the ROS pipeline to interface with the Husky sim and Husky robot
 
@@ -161,6 +177,128 @@ This message is more simple than the last. All we will need to publish is linear
 ## Simple code to control the robot in Python
 Now that we understand the types of messages we will need to handle. It's time to write our path planning code. First we need to go into our `src` directory:
 ```
-$ cd ~/husky_ros_tutorial/src
+$ cd ~/husky_ros_tutorial/src/ctrl_husky_tutorial/src
 ```
-Now open up your favorite IDE
+Now open up your favorite IDE so that we can write some code  
+We will start by opening a new file and naming is "husky_tutorial_planner.py". Paste the following code into your editor so we can go through line-by-line:
+```python
+#!/usr/bin/env python3
+import rospy
+import math
+import numpy as np
+import tf
+from std_msgs.msg import String
+from geometry_msgs.msg import Twist, PoseWithCovariance, Pose
+from nav_msgs.msg import Odometry
+from tf2_msgs.msg import TFMessage
+
+x = 0
+y = 0
+yaw = 0
+
+def tf_callback(msg):
+    global x, y, theta
+
+    frame_id = "odom"
+    child_frame_id = "base_link"
+
+    for transform in msg.transforms:
+        if transform.header.frame_id == frame_id and transform.child_frame_id == child_frame_id:
+            # Extract the position and orientation
+            x = transform.transform.translation.x
+            y = transform.transform.translation.y
+            quat = (
+                transform.transform.rotation.x,
+                transform.transform.rotation.y,
+                transform.transform.rotation.z,
+                transform.transform.rotation.w,
+            )
+            euler = tf.transformations.euler_from_quaternion(quat)
+            theta = euler[2]
+            break
+    
+    # uncomment to see position info logged
+    # rospy.loginfo(f"x: {x}, y: {y}, yaw: {yaw}")
+
+
+def main():
+    rospy.init_node("ctrl_husky")
+    sub = rospy.Subscriber("/tf", TFMessage, tf_callback, queue_size=10)
+    pub = rospy.Publisher("/husky_velocity_controller/cmd_vel", Twist, queue_size=10)
+
+    initial_position = np.array([0., 0.])
+    # for an extra challenge, see if you can make this initialize to any starting position
+
+    while not rospy.is_shutdown():
+        if np.linalg.norm(initial_position - np.array([x, y])) > 10:
+            rospy.loginfo("Finished Planning")
+            break
+        else:
+            control_message = Twist()
+            control_message.linear.x = 1.0
+            control_message.angular.z = 0.3
+            pub.publish(control_message)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except rospy.ROSInterruptException:
+        pass
+```
+### Imports
+This first block of code looks like your typical imports, except for line 1. When using ROS, you must specify the path of your Python install.  
+We have typical imports such as `rospy`, `math` and `numpy`. We also import `tf` which allows us to transform from quaternion coordinate frames to euler.  
+The rest of the imports are all necessarry to handle the message types we will be using in this script. As you can seen below, there is a standard method for importing message types into your program.
+```python
+#!/usr/bin/env python3
+import rospy
+import math
+import numpy as np
+import tf
+from std_msgs.msg import String
+from geometry_msgs.msg import Twist, PoseWithCovariance, Pose
+from nav_msgs.msg import Odometry
+from tf2_msgs.msg import TFMessage
+```
+### Main
+We will first skip to the `main` function before going over the `callback`.  
+The first three lines are to setup our custom node and the subscribers and publishers.  
+- In a subscriber, we need to define the topic, in this case it's `/tf`, the message type, `TFMessage`, the callback function, `tf_callback`, and optionally, we can define a queue size of messages.
+- In the publisher, we just need to define the topic we are publishing to, `/husky_velocity_controller/cmd_vel`, the message type, `Twist` and the queue size.
+```python
+    rospy.init_node("ctrl_husky")
+    sub = rospy.Subscriber("/tf", TFMessage, tf_callback, queue_size=10)
+    pub = rospy.Publisher("/husky_velocity_controller/cmd_vel", Twist, queue_size=10)
+```
+Now that we have done the housekeeping, let us get into the meat of our planner. Which is actually *very* simple.  
+Our planner is going to run in a while loop that continuously provides some control input to the robot.
+```python
+    while not rospy.is_shutdown():
+        if np.linalg.norm(initial_position - np.array([x, y])) > 10:
+            rospy.loginfo("Finished Planning")
+            break
+        else:
+            control_message = Twist()
+            control_message.linear.x = 1.0
+            control_message.angular.z = 0.3
+            pub.publish(control_message)
+```
+Let's first go through the termination criteria for this specific planner.  
+This is a pretty simple, but useful termination criteria to use in path planning. Once our robot reachers a euclidean distance of 10 meters from the origin, it will break out of the planning loop, which will stop the robot from moving. We then log a message to ROS to confirm that the planning is finished.
+```python
+        if np.linalg.norm(initial_position - np.array([x, y])) > 10:
+            rospy.loginfo("Finished Planning")
+            break
+```
+Now we will take a look at our planner. This example is the most basic of applications. You could write powerful planners using other methods such as *trajectory optimization*, *social forces model* etc. in a script with a very similar format.
+- We first define the message type that we are going to append to. In this case it is the type `Twist`, which makes sense because this is the message type we defined for our publisher.
+- The next two lines are where we define the control input. You can change these to any value you would like, but know that the husky robot is bounded by physics, so it has upper bounds for the linear and angular velocities.
+- The final line is where we finally publish our control. Once this line executes, we have finally sent the message to our robot, and it will then execute the given control command.
+```python
+            control_message = Twist()
+            control_message.linear.x = 1.0
+            control_message.angular.z = 0.3
+            pub.publish(control_message)
+```
+
+After saving the code. You must first make it an executable and then build run catkin_make in the catkin folder.
