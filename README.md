@@ -332,5 +332,57 @@ Let's first take a look at the code prior to the 'for loop':
     frame_id = "odom"
     child_frame_id = "base_link"
 ```
+Now, in the "for loop":
+- These first two lines are necessary to validate that we receive data from the correct reference frame, as noted above.
+- We go through a for loop until we get the adequetly named transform from the `/tf` topic message.
+```python
+    for transform in msg.transforms:
+        if transform.header.frame_id == frame_id and transform.child_frame_id == child_frame_id:
+```
+The next lines are pretty straight forward, used to assign the values from the `/tf` message to our own variables.  
+Take note that we create a tuple that stores all the values from the rotation data. We will use this in the next step to convert to euler angles.
+```python
+            x = transform.transform.translation.x
+            y = transform.transform.translation.y
+            quat = (
+                transform.transform.rotation.x,
+                transform.transform.rotation.y,
+                transform.transform.rotation.z,
+                transform.transform.rotation.w,
+            )
+```
+As noted above, this line uses a function from the "tf" package to convert our quaternion angles to euler. This function returns 3 values which represent the angle about each axis (*x, y, z*). We are only interested in getting the rotation about the *z* (vertical) axis.
+```python
+            euler = tf.transformations.euler_from_quaternion(quat)
+            theta = euler[2]
+```
+We then `break` out of the loop because we have gotten data from the desired reference frame. Remember that this function will be called every time there is an update in the `/tf` topic.  
 
-After saving the code. You must first make it an executable and then build run catkin_make in the catkin folder.
+We now understand the fundamentals of the code we need to drive the Husky robot. Now save the file and go back into the terminal. There are a couple more steps we need to take to make sure our package works properly.  
+### Final steps to run the code
+Once we open our terminal, we will need to re-source the package, as well as make our Python scripy executable.
+```
+$ cd ~/husky_ros_tutorial
+$ source devel/setup.bash
+```
+This will make our package useable from any directory in the terminal
+```
+$ cd ~/husky_ros_tutorial/src/ctrl_ros_tutorial/src
+$ chmod +x husky_tutorial_planner.py
+```
+This will make our script executable so that ROS can run it.  
+
+Finally, we need to `catkin_make` our package. ROS gives some reasons as to why this is necessary in the ROS tutorials
+```
+$ cd ~/husky_ros_tutorial
+$ catkin_make
+```
+Once it succesfully builds, you have made the proper package to run the Husky A200!!!  
+
+In the same terminal, go back to the home directory by running `$ cd`.  
+
+Then open up another terminal. We want to open the Gazebo simulator, run `$ roslaunch husky_gazebo husky_empty_world.launch`  
+
+Now in the terminal where we have already sourced the package, run the command `$ rosrun ctrl_ros_tutorial husky_tutorial_planner.py`  
+
+You should now see the Husky move! Then once it gets 10 meters away from the origin, it will stop.
