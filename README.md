@@ -300,5 +300,37 @@ Now we will take a look at our planner. This example is the most basic of applic
             control_message.angular.z = 0.3
             pub.publish(control_message)
 ```
+### Callback Function
+Now we are going to take a look at the `tf_callback` function. Callbacks are commonly used in ROS code because they will be called anytime a topic within the ROS system updates. This is important for getting the most up to date position info on an agent; which is what we will do here.
+```python
+def tf_callback(msg):
+    global x, y, theta
+
+    frame_id = "odom"
+    child_frame_id = "base_link"
+
+    for transform in msg.transforms:
+        if transform.header.frame_id == frame_id and transform.child_frame_id == child_frame_id:
+            # Extract the position and orientation
+            x = transform.transform.translation.x
+            y = transform.transform.translation.y
+            quat = (
+                transform.transform.rotation.x,
+                transform.transform.rotation.y,
+                transform.transform.rotation.z,
+                transform.transform.rotation.w,
+            )
+            euler = tf.transformations.euler_from_quaternion(quat)
+            theta = euler[2]
+            break
+```
+Let's first take a look at the code prior to the 'for loop':
+- We want to make sure we are defining the position variables in a global scope.
+- Lines 2 and 3 are where we define which fields from the `/tf` topic message we want. The `/tf` topic publishes a message with multiple different reference frames, so we want to make sure we are only using the refernce frame that provides the robot's position (`base_link`) relative to the origin (`odom`).
+```python
+    global x, y, theta
+    frame_id = "odom"
+    child_frame_id = "base_link"
+```
 
 After saving the code. You must first make it an executable and then build run catkin_make in the catkin folder.
