@@ -16,7 +16,10 @@ Under <strong>Section 1.1</strong>, complete tutorials <strong>1</strong> and <s
 # Installing the Husky Simulation
 Navigate to the Husky ROS tutorial page: http://wiki.ros.org/husky_gazebo/Tutorials/Simulating%20Husky  
 
-Follow the tutorial on this page, and verify that you are able to launch the "husky_empty_world.launch"
+Follow the tutorial on this page, and verify that you are able to launch the ~~"husky_empty_world.launch"~~
+You can follow the tutorial page, but at the point where it tells you to launch an empty world, run the command:
+```$ roslaunch husky_gazebo empty_world.launch```.
+They made an error in their documentation.
 
 ![image](https://github.com/UW-CTRL/HuskyROSTutorial/blob/e037962c0e13186691ad3e49f6ae88054d584284/gazebo_empty_world.png)
 
