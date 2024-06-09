@@ -371,7 +371,7 @@ $ source devel/setup.bash
 ```
 This will make our package useable from any directory in the terminal
 ```
-$ cd ~/husky_ros_tutorial/src/ctrl_ros_tutorial/src
+$ cd ~/husky_ros_tutorial/src/ctrl_husky_tutorial/src
 $ chmod +x husky_tutorial_planner.py
 ```
 This will make our script executable so that ROS can run it.  
@@ -385,8 +385,8 @@ Once it succesfully builds, you have made the proper package to run the Husky A2
 
 In the same terminal, go back to the home directory by running `$ cd`.  
 
-Then open up another terminal. We want to open the Gazebo simulator, run `$ roslaunch husky_gazebo husky_empty_world.launch`  
+Then open up another terminal. We want to open the Gazebo simulator, run `$ roslaunch husky_gazebo empty_world.launch`  
 
-Now in the terminal where we have already sourced the package, run the command `$ rosrun ctrl_ros_tutorial husky_tutorial_planner.py`  
+Now in the terminal where we have already sourced the package, run the command `$ rosrun ctrl_husky_tutorial husky_tutorial_planner.py`  
 
 You should now see the Husky move! Then once it gets 10 meters away from the origin, it will stop.
