@@ -1,7 +1,7 @@
 # HuskyROSTutorial
 An easy to follow tutorial for lab members to follow to get them up to speed with how to interface with the Husky A200 using Python, ROS, Gazebo and RVIZ  
 
-*Jasper Geldenbott (jgelden@uw.edu), Autumn 2023*
+*Jasper Geldenbott (jgelden [at] uw.edu), Autumn 2023*
 
 # Introduction
 This tutorial will use a combination of the provided ROS tutorials (which utilize Turtlesim), the Husky Gazebo documentation and custom written code that is more specific to the way the CTRL Lab uses ROS and the Husky A200 Robot. For this tutorial, it is assumed that you are somewhat comfortable with Python and the Linux command line.
