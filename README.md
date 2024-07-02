@@ -24,7 +24,7 @@ They made an error in their documentation.
 
 ![image](https://github.com/UW-CTRL/HuskyROSTutorial/blob/e037962c0e13186691ad3e49f6ae88054d584284/gazebo_empty_world.png)
 
-Your screen should look like this.
+Your screen should look like this. [bloop]
 
 # Setting up a Workspace and ROS Package
 We will now need to set up a ROS workspace, which will allow us to properly create and run our package.
